@@ -6,7 +6,7 @@
 |---|---|
 | **Concepts** | Constraint satisfaction, vectorized filtering, feature engineering, data cleaning, property-based testing, letter-frequency heuristics |
 | **Stack** | NumPy, pandas, Matplotlib, pytest |
-| **Code** | [`wordle_solver.py`](wordle_solver.py) (v1, current) with tests in [`test_wordle_solver.py`](test_wordle_solver.py); [`Wordle_Solver_v0.py`](Wordle_Solver_v0.py) (the first version, kept for comparison); three curated word-list CSVs |
+| **Code** | [`wordle_solver.py`](wordle_solver.py) (v1, current) and [`wordle_engine.py`](wordle_engine.py) (game engine and self-play), with tests in [`test_wordle_solver.py`](test_wordle_solver.py) and [`test_wordle_engine.py`](test_wordle_engine.py); [`Wordle_Solver_v0.py`](Wordle_Solver_v0.py) (the first version, kept for comparison); three curated word-list CSVs |
 | **Notebooks** | [`01_Word_Elimination_v3.ipynb`](01_Word_Elimination_v3.ipynb) (the solver's prototype) and [`wordle_engine.ipynb`](wordle_engine.ipynb) (a playable game that scores guesses), plus three earlier notebooks on building and exploring the datasets |
 | **Ideas** | [`IDEAS.md`](IDEAS.md): the original improvement notes, with the status of each |
 | **Status** | v1: exact filtering. Next guess suggestions are in progress (see [`IDEAS.md`](IDEAS.md)) |
@@ -61,10 +61,31 @@ The datasets also show a core data-science skill: **feature engineering**, which
 | `remaining_letter_frequency()` / `display_remaining_words()` | The letter-frequency chart and printed list from v0 |
 | `letter_count_table(words)` | One row per word, one column per letter, holding how many times the letter appears |
 
-**How it's tested** (`python -m pytest Wordle`, 28 tests):
+**How it's tested** (`python -m pytest Wordle`, 47 tests in about 10 seconds):
 - In 250 simulated games, the remaining words are compared with a brute-force search: every word that would have produced exactly the same colors. They match every time; 100 of the games use guesses with repeated letters.
 - Four real games from v0's `test_class()` are replayed, and the solver must end with exactly the answer.
 - There are also tests for scoring edge cases, notation errors, and contradictory feedback.
+- The engine is checked against five real games, including the `butch` game from the notebook. Add your own to `REAL_GAMES` in `test_wordle_engine.py`.
+- Self-play runs through all 3,624 madalynrose words. Each game asserts that the solver never dropped the answer.
+
+[`wordle_engine.py`](wordle_engine.py):
+
+| Component | What it does |
+|---|---|
+| `Wordle(wordle=None, allowed=None, seed=None)` | The game from `wordle_engine.ipynb` as a module, using the solver's `score` function. `guess()` returns feedback in the solver's notation. With no wordle given, it picks a random word. `allowed` restricts guesses to a word list, as the real game does. |
+| `Wordle.play(guesses=None)` / `Wordle.from_hidden_input()` | Play interactively or replay a list of guesses; set the word with hidden input |
+| `self_play(answer, strategy)` | The solver plays the engine: `strategy(solver)` picks each guess. It raises if the solver ever drops the answer. |
+| `random_candidate(seed)` | Baseline strategy, v0's planned `random_solver`: guess a random word that could still be the answer |
+| `simulate(answers, strategy)` / `summarize(results)` | Play one game per answer; report the win rate, average guesses and the distribution of guesses per game |
+
+**Self-play baseline:** the `random_candidate` strategy, playing every word in each list (games continue past six guesses so the full distribution is visible):
+
+| Word list | Games | Won in 6 | Average guesses | Worst game |
+|---|---|---|---|---|
+| madalynrose | 3,624 | 94.5% | 4.39 | 12 |
+| NLTK | 8,497 | 91.9% | 4.74 | 12 |
+
+The 200 madalynrose losses come from word families that differ by one letter, such as `?ears` (dears, fears, gears, …), `?ated` and `?ales`. Guessing those candidates one at a time runs out of turns. A strategy that picks guesses to split the candidates is the next PR.
 
 [`Wordle_Solver_v0.py`](Wordle_Solver_v0.py) is the first version, kept for comparison. It filters with pandas and stores only whether each letter appears, so with repeated letters it can keep words the clues rule out (see [`IDEAS.md`](IDEAS.md)).
 
@@ -198,7 +219,7 @@ The original planning notes, the status of each item, and a measurement of how t
 
 - [x] **Letter counts:** use how many times each letter appears, not just whether it does, to handle double letters fully.
 - [x] **Contradiction detection:** badly formed or contradictory feedback raises an error that says what's wrong.
-- [ ] **Self-play mode:** the solver picks a hidden word, plays itself, and reports average guesses over the dictionary.
+- [x] **Self-play mode:** the engine picks or is given a hidden word, the solver plays it, and `simulate` reports average guesses over a word list.
 - [ ] **Best-guess suggestions:** rank the next guess by expected information gain (entropy).
 
 ## Further reading

@@ -28,7 +28,7 @@ These are my original planning notes for the Wordle solver, followed by where ea
 
 | Item | Status | Where things stand |
 |---|---|---|
-| **Finish the solver** | Partly done | v1 filters the candidates exactly (see below). It doesn't yet suggest a next guess, and v0's `random_solver()` is an empty stub. |
+| **Finish the solver** | Partly done | v1 filters the candidates exactly (see below), and `wordle_engine.self_play` lets it play complete games. v0's `random_solver` exists as the `random_candidate` strategy. It doesn't yet suggest a good next guess. |
 | Metrics to pick the best word | Not started | The only aid is the letter-frequency chart (`remaining_letter_frequency`), which a person has to read. |
 | Word popularity as a tie-breaker | Not started | None of the three datasets has a frequency column. The parsing notebook has a commented-out `nltk.download('brown')`; the Brown corpus is one possible source of word counts. |
 | Parameter for the first guess | Not started | |
@@ -37,7 +37,7 @@ These are my original planning notes for the Wordle solver, followed by where ea
 | Store letter counts in the dataset | Done, computed at load time | v1 computes the counts from the words when they load, so the 1.5 MB CSVs didn't need regenerating. `letter_count_table(words)` returns them as a DataFrame. |
 | **Heat map method** | Explored, not in the solver | `v1_-_MadalynRose_bank_analysis.ipynb` plots how often each letter appears in each of the five positions. `Wordle_Solver_v0.py` imports seaborn "for heatmap" but doesn't use it. |
 | **Best starting word** | Groundwork only | The `In Word List` column of the NLTK CSV records a hand check of 17 vowel-heavy openers (`adieu`, `audio`, `ourie`, …) against the list of words Wordle accepts. No ranking has been done. |
-| **Scale up testing** | Partly done | Engine: `test_score_guess()` in `wordle_engine.ipynb` asserts the double-letter cases and the bad-input checks. Solver: `test_wordle_solver.py` (28 `pytest` tests) checks v1 against brute force on 250 random games and replays four real games. Next step: self-play across the whole answer list. |
+| **Scale up testing** | Done | Engine: `test_score_guess()` in `wordle_engine.ipynb` asserts the double-letter cases and the bad-input checks. Solver: `test_wordle_solver.py` checks v1 against brute force on 250 random games and replays four real games. Engine and solver together: `test_wordle_engine.py` plays all 3,624 madalynrose words through `self_play`, which fails if the answer is ever dropped. 47 tests run in about 10 seconds. |
 
 ### Measurement: how tight is the solver?
 
@@ -65,5 +65,5 @@ Both need letter counts, which v1 adds.
 | Number of duplicates of each letter, per word | `v2_-_MadalynRose_bank_analysis.ipynb` | Not started. This is the same work as "store letter counts". |
 | Separate likely answers from words Wordle merely accepts | `01_Word_Elimination_v3.ipynb` (comments on `cothy`, `zloty`) | Not started. The NLTK list includes rare words such as `urari` and `uzara`, which make the candidate lists longer than they need to be. |
 | Validate the `!`/`?` input notation | `01_Word_Elimination_v3.ipynb` (last cell) | Done (v1). `parse_feedback` rejects a mark with no letter before it, a doubled mark and characters other than letters, `!` and `?`. `Constraints` rejects feedback that contradicts an earlier guess. |
-| Choose a random word as the wordle | `wordle_engine.ipynb` | Not started. Self-play needs it. |
+| Choose a random word as the wordle | `wordle_engine.ipynb` | Done. `Wordle()` with no word picks one at random, and `seed=` makes the choice repeatable. |
 | Hard mode | the note above | Not started. Neither the engine nor the solver has a hard-mode option. |

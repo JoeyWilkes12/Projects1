@@ -153,6 +153,7 @@ Each project pairs a from-scratch implementation with validation: against a refe
 - A constraint-propagation solver. After each guess, it narrows the candidate list using green (right letter, right slot), yellow (right letter, wrong slot), and gray (letter not in word) feedback.
 - It tracks a minimum and maximum count for each letter, so repeated letters are handled exactly. A `pytest` suite checks that the remaining words match a brute-force search in 250 random games.
 - Filtering is vectorized with NumPy and takes about 0.3 ms per guess. The first version, [`Wordle_Solver_v0.py`](Wordle/Wordle_Solver_v0.py), is kept for comparison.
+- [`wordle_engine.py`](Wordle/wordle_engine.py) plays the game, and self-play runs the solver through every word in a list. Guessing any word that could still be the answer wins 94.5% of the 3,624 madalynrose games within six guesses.
 - Shows a letter-frequency chart of the remaining candidates to help pick the next guess.
 - Ships with three curated, feature-engineered word datasets:
 
