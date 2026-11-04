@@ -147,10 +147,19 @@ def random_candidate(seed=None):
 
 
 def best_guess(method="entropy", hard_mode=False):
-    """Strategy: play the solver's top suggestion (see ``WordleSolver.suggest``)."""
+    """Strategy: play the solver's top suggestion (see ``WordleSolver.suggest``).
+
+    Suggestions are cached by the game so far, so when many games share an
+    opening (every game does, after a fixed first guess) the second guess is
+    worked out once per color pattern rather than once per game.
+    """
+    cache = {}
 
     def choose(solver):
-        return solver.suggest(1, method=method, hard_mode=hard_mode)["word"].iloc[0]
+        key = (id(solver), tuple(solver.history))
+        if key not in cache:
+            cache[key] = solver.suggest(1, method=method, hard_mode=hard_mode)["word"].iloc[0]
+        return cache[key]
 
     return choose
 

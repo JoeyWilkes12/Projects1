@@ -9,7 +9,7 @@ import pytest
 
 from wordle_engine import best_guess, simulate, summarize
 from wordle_solver import WordleSolver, load_words, score
-from wordle_strategy import encode, entropy, heatmap_scores, letter_counts, pattern_matrix
+from wordle_strategy import encode, entropy, expected_remaining, heatmap_scores, letter_counts, pattern_matrix
 
 NLTK = load_words()
 
@@ -48,6 +48,18 @@ def test_entropy_simple_cases():
     patterns = np.array([[0, 0, 0, 0], [0, 0, 1, 1], [0, 1, 2, 3]], dtype=np.uint8)
     assert np.allclose(entropy(patterns), [0, 1, 2])  # no split, halves, quarters
     assert np.allclose(entropy(patterns[:, :1]), 0)  # one candidate: nothing to learn
+
+
+def test_expected_remaining():
+    patterns = np.array([[0, 0, 0, 0], [0, 0, 1, 1], [0, 1, 2, 3]], dtype=np.uint8)
+    assert np.allclose(expected_remaining(patterns), [4, 2, 1])
+
+
+def test_best_guess_cache_matches_uncached(solver):
+    answers = random.Random(7).sample(solver.words.tolist(), 15)
+    cached = simulate(answers, best_guess(), solver)
+    uncached = simulate(answers, lambda s: s.suggest(1)["word"].iloc[0], solver)
+    assert cached["history"].tolist() == uncached["history"].tolist()
 
 
 def test_heatmap_scores():

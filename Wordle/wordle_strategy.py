@@ -96,6 +96,20 @@ def entropy(patterns, chunk=1024):
     return out
 
 
+def expected_remaining(patterns, chunk=1024):
+    """Expected number of candidates left after each guess (row): the sum of
+    squared group sizes divided by the number of candidates. Lower is better."""
+    n_guesses, m = patterns.shape
+    n_codes = int(patterns.max()) + 1 if patterns.size else 1
+    out = np.empty(n_guesses)
+    for start in range(0, n_guesses, chunk):
+        p = patterns[start : start + chunk].astype(np.int64)
+        rows = np.arange(len(p))[:, None] * n_codes
+        sizes = np.bincount((rows + p).ravel(), minlength=len(p) * n_codes).reshape(len(p), n_codes)
+        out[start : start + chunk] = (sizes.astype(np.float64) ** 2).sum(axis=1) / max(m, 1)
+    return out
+
+
 def heatmap_scores(guess_codes, candidate_codes, candidate_counts):
     """The heat-map score of each guess: per slot, the share of candidates
     with the guess's letter there, plus, per distinct letter, the share of
