@@ -81,8 +81,7 @@ python -i differentiation.py
 >>> test_jacobian()
 ```
 
-- **Data:** `prob4` (radar tracking) needs `plane.npy`, which isn't included in the repository.
-- **Compatibility:** a few lines pass `1e3` as a sample count to `linspace`, which current NumPy rejects. Use `int(1e3)` instead.
+`prob4` (radar tracking) needs `plane.npy`, which isn't included in the repository.
 
 ## Skills demonstrated
 

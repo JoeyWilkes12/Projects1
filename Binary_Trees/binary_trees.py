@@ -538,9 +538,10 @@ def prob4():
 
     #DISPLAY THE VARIOUS TIMES OF THE FIND, AND SEARCH IN THE SinglyLinkedList,BST, AVL
     ax1 = plt.subplot(121)
-    ax1.loglog(n,linkedListCreateTimes, "g--", label = "Linked List", basex = 2,basey = 10)
-    ax1.loglog(n,BSTCreateTimes, "r:", label = "BST", basex = 2,basey = 10)
-    ax1.loglog(n,AVLCreateTimes,"b-", label = "AVL", basex = 2,basey = 10)
+    ax1.loglog(n,linkedListCreateTimes, "g--", label = "Linked List")
+    ax1.loglog(n,BSTCreateTimes, "r:", label = "BST")
+    ax1.loglog(n,AVLCreateTimes,"b-", label = "AVL")
+    ax1.set_xscale("log", base=2)
     plt.xlabel("Size of Inputs")
     plt.ylabel("Time")
     plt.title("Creation times", fontsize = 18)
@@ -548,9 +549,10 @@ def prob4():
 
     #pg 74 of python essentials formatting for matplotlib
     ax2 = plt.subplot(122)
-    ax2.loglog(n,locate_In_linked_List, "g--", label = "Linked List", basex = 2,basey = 10)
-    ax2.loglog(n,search_in_BST, "r:", label = "BST", basex = 2,basey = 10)
-    ax2.loglog(n,look_in_AVL,"b-", label = "AVL", basex = 2,basey = 10)
+    ax2.loglog(n,locate_In_linked_List, "g--", label = "Linked List")
+    ax2.loglog(n,search_in_BST, "r:", label = "BST")
+    ax2.loglog(n,look_in_AVL,"b-", label = "AVL")
+    ax2.set_xscale("log", base=2)
     plt.xlabel("Size of Inputs")
     plt.ylabel("Time")
     plt.title("Search times", fontsize = 18)

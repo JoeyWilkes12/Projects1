@@ -1,7 +1,7 @@
+import sys
 import numpy as np
 # https://stackoverflow.com/questions/1987694/how-to-print-the-full-numpy-array-without-truncation
-np.set_printoptions(threshold=np.nan)
-# np.set_printoptions(threshold=np.inf)
+np.set_printoptions(threshold=sys.maxsize)
 import pdb
 import operator
 import csv

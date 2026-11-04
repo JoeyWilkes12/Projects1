@@ -161,14 +161,15 @@ def prob4():
     f = lambda x: np.exp(-1/2 * (x.T @ x)) * (1/ (2*(np.pi))**2)
     # f = lambda x: 1. / (2*np.pi) ** (x.size/2.) * np.exp(-x @ x / 2.)
     #N is the number of samples
-    N = np.logspace(1,5,20).astype(np.int) #as opposed to linspace
+    N = np.logspace(1,5,20).astype(int) #as opposed to linspace
     #define the bounds of integration
     mins = np.array([(-3/2),0,0,0])
     maxs = np.array([(3/4),1,(1/2),1])
     #the distribution has mean 0 and covariance I (the nxn identity)
     means, cov = np.zeros(4), np.eye(4)
     #compute true value of F with scipy
-    F = stats.mvn.mvnun(mins,maxs,means,cov)[0]
+    # integrate the multivariate normal density over the box [mins, maxs]
+    F = stats.multivariate_normal(means, cov).cdf(maxs, lower_limit=mins)
     #use function from prob 3 to get relative error for each element of N,
     #using mc_integrate(), note mins, maxs don't change
     estimates = np.array([mc_integrate(f,mins,maxs,i) for i in N])

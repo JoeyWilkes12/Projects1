@@ -194,7 +194,7 @@ ws.new_guess_results("s!h!a!r!d!")   # solved: "shard"
 - The scientific Python stack used across the projects:
 
 ```bash
-pip install numpy scipy sympy matplotlib networkx autograd pandas seaborn pytest
+pip install -r requirements.txt
 ```
 
 > `Binary_Trees` imports `graphviz_layout`, which also needs [Graphviz](https://graphviz.org/) and `pygraphviz` installed.
@@ -242,6 +242,5 @@ Projects1/
 ## Notes & known limitations
 
 - **External datasets are not included.** Several applied functions expect data files in the working directory that aren't in this repository: `movie_data.txt`, `web_stanford.txt`, `top250movies.txt`, `social_network.csv`, `mnist_subset.npz`, `plane.npy`, `stability_data.npy`, `english.txt`, and text corpora for the Markov generator. The core algorithms and the test suites run without them.
-- **NumPy compatibility.** Parts of the code predate current NumPy releases. They use the removed aliases `np.float` and `np.int` (`KNN`, `Monte_Carlo`), `threshold=np.nan` (`PageRank`), and a float sample count in `linspace` (`Differentiation`). Use an older NumPy (< 1.24), or swap in `float`, `int`, `sys.maxsize`, and `int(1e3)`, to run those sections on a current install. A few calls are also affected by newer SciPy and Matplotlib releases (`stats.mode` indexing in `KNN`, `stats.mvn.mvnun` in `Monte_Carlo`, `basex=` in `Binary_Trees`). Each project's README lists the specifics.
 - `Monte_Carlo/monte_carlo_integration` is a Python script without a `.py` extension. Run it with `python monte_carlo_integration`.
 - The Wordle solver is a **v0**. Planned work includes contradiction checking for mistyped feedback, an automated self-play mode, and tracking how many times each letter appears.

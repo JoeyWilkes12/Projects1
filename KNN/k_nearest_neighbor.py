@@ -226,7 +226,8 @@ def test_KDT():
         [19,45,17,3],[41,17,20,3],[60,60,25,3]])
     A = np.array([[50,2,3,4],[75,50,2,3],[60,60,25,3],
         [25,50,2,3],[19,45,17,3],[41,17,20,3],[17,18,19,20]])
-    B = np.array([[5,5],[3,2],[8,4],[2,6,5]]) #trivial case compared to C
+    # ragged on purpose; NumPy >= 1.24 requires dtype=object for ragged arrays
+    B = np.array([[5,5],[3,2],[8,4],[2,6,5]], dtype=object) #trivial case compared to C
     #C = np.array([[3,1,4],[1,2,7],[4,3,5],[2,0,3],[2,4,5],[6,1,4],[1,4,3],[0,5,7],[5,2,5]])
     C = np.array([[3,1,4],[4,3,5],[6,1,4],[5,2,5],[1,2,7],[2,4,5],[0,5,7],[1,4,3],[2,0,3]])
 
@@ -295,7 +296,9 @@ class KNeighborsClassifier:
         distances, indices = self.tree.query(vector,self.n)
         #mode, frequency = stats.mode(self.labels[indices])[0][0]
 
-        return stats.mode(self.labels[indices])[0][0]
+        # atleast_1d handles n_neighbors=1, where query() returns a scalar index;
+        # keepdims=False makes mode() return a scalar (SciPy >= 1.11 behavior)
+        return stats.mode(self.labels[np.atleast_1d(indices)], keepdims=False)[0]
 
 def test_5():
     """ test KNeighborsClassifier """
@@ -324,11 +327,11 @@ def prob6(n_neighbors, filename="mnist_subset.npz"):
     """
     data = np.load("mnist_subset.npz")
     # Training data
-    X_train = data["X_train"].astype(np.float)
+    X_train = data["X_train"].astype(float)
     # Training labels
     y_train = data["y_train"]
     # Test data
-    X_test = data["X_test"].astype(np.float)
+    X_test = data["X_test"].astype(float)
     # Test labels
     y_test = data["y_test"]
 

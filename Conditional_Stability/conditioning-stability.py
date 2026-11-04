@@ -64,7 +64,7 @@ def prob2():
     w = sy.poly_from_expr(sy.product(x-i, (i, 1, 20)))[0]
     # The roots of w are 1, 2, ..., 20.
     w_roots = np.arange(1, 21)
-    w_coeffs = np.array(w.all_coeffs())
+    w_coeffs = np.array(w.all_coeffs(), dtype=float)
     # perturbed_coeffs = np.copy(w_coeffs)
     roots = np.roots(w_coeffs)
     #k_vals is a list containing absolute condition numbers based upon r_i

@@ -1,0 +1,9 @@
+numpy
+scipy>=1.10        # multivariate_normal.cdf(lower_limit=...) and stats.mode(keepdims=...)
+sympy
+matplotlib>=3.3    # set_xscale("log", base=...)
+networkx
+autograd
+pandas
+seaborn
+pytest

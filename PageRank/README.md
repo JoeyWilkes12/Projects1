@@ -84,8 +84,7 @@ python
 >>> get_ranks(DiGraph(A, labels=list("abcd")).itersolve())
 ```
 
-- **NumPy version:** line 3 calls `np.set_printoptions(threshold=np.nan)`, which current NumPy rejects. Use NumPy < 1.24, or change it to `threshold=sys.maxsize`.
-- **Datasets:** the ranking functions need `web_stanford.txt`, an NCAA results CSV, and `top250movies.txt`. These aren't included in the repository.
+The ranking functions need `web_stanford.txt`, an NCAA results CSV, and `top250movies.txt`. These aren't included in the repository.
 
 ## Skills demonstrated
 

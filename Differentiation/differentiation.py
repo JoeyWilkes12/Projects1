@@ -85,7 +85,8 @@ def test_quotients():
     axes[1,0].plot(domain,approximations[2],label=titles[2])
     axes[1,0].set_title(titles[2])
     axes[1,1].plot(domain,approximations[3],label=titles[3])
-    axes[1,1].set_tit    #the titles dictionary could be used to map the axes indices to either the approximations or the title
+    axes[1,1].set_title(titles[3])
+    #the titles dictionary could be used to map the axes indices to either the approximations or the title
     # titles = {(0,1): , (): , (): , (): ,
     #         (): , (): , (): , (): }
 
@@ -295,7 +296,7 @@ def prob6():
     of the Chebyshev polynomials, and use that function to plot the derivatives
     over the domain [-1,1] for n=0,1,2,3,4.
     """
-    domain = anp.linspace(-1,1,1e3)
+    domain = anp.linspace(-1,1,int(1e3))
     #use elementwise_grad for array support of derivative of cheb_poly function (polynomial)
     prime = elementwise_grad(cheb_poly)
     colors = ["blue","green","red","black","purple","orange"]
@@ -309,7 +310,7 @@ def prob6():
 
 def test_cheb_poly():
     """ visualize output from cheb_poly function """
-    x = anp.linspace(-1,1,1e3)
+    x = anp.linspace(-1,1,int(1e3))
     plt.plot(x,cheb_poly(x,0),'-b',label="t0")
     plt.plot(x,cheb_poly(x,1),color="orange",label="t1")
     plt.plot(x,cheb_poly(x,2),color="green",label="t2")
@@ -333,7 +334,7 @@ def cheby_test():
     t6 = 32*x**6 - 48*x**4 + 18*x**2 - 1
 
     # y = 2 #call it y as to no confuse parameter of cheb_poly(x,n)
-    y = anp.linspace(-25,25,1e4)
+    y = anp.linspace(-25,25,int(1e4))
     # print(y)
 
     # print(sy.lambdify(x,t6,"numpy")(y))
