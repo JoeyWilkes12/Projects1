@@ -4,12 +4,12 @@
 
 | | |
 |---|---|
-| **Concepts** | Constraint satisfaction, set intersection, feature engineering, data cleaning, letter-frequency heuristics |
-| **Stack** | pandas, NumPy, Matplotlib |
-| **Code** | [`Wordle_Solver_v0.py`](Wordle_Solver_v0.py), plus three curated word-list CSVs |
+| **Concepts** | Constraint satisfaction, vectorized filtering, feature engineering, data cleaning, property-based testing, letter-frequency heuristics |
+| **Stack** | NumPy, pandas, Matplotlib, pytest |
+| **Code** | [`wordle_solver.py`](wordle_solver.py) (v1, current) with tests in [`test_wordle_solver.py`](test_wordle_solver.py); [`Wordle_Solver_v0.py`](Wordle_Solver_v0.py) (the first version, kept for comparison); three curated word-list CSVs |
 | **Notebooks** | [`01_Word_Elimination_v3.ipynb`](01_Word_Elimination_v3.ipynb) (the solver's prototype) and [`wordle_engine.ipynb`](wordle_engine.ipynb) (a playable game that scores guesses), plus three earlier notebooks on building and exploring the datasets |
 | **Ideas** | [`IDEAS.md`](IDEAS.md): the original improvement notes, with the status of each |
-| **Status** | v0, in active development |
+| **Status** | v1: exact filtering. Next guess suggestions are in progress (see [`IDEAS.md`](IDEAS.md)) |
 
 ---
 
@@ -43,17 +43,30 @@ The datasets also show a core data-science skill: **feature engineering**, which
    - letters known *not* to be in the word;
    - for each slot, the green letter (if known) and the yellow letters (which are excluded from that slot).
 3. **Filter:** keep only the rows that satisfy every rule, by intersecting row indices across all constraints.
-4. **Handle repeated letters:** if a guess has two `a`'s and one comes back gray while the other is green, `a` is still in the word. The solver removes confirmed letters from the "not in word" set so they aren't wrongly excluded.
+4. **Handle repeated letters with counts.** Each guess gives a *minimum* count for every letter that came back green or yellow. If another copy of the letter came back gray, it also gives a *maximum*. For example, `sheep` against `skate` comes back `s!he?ep`: one `e` is yellow and the other is gray, so the answer has exactly one `e`, and it isn't in slot 3 or 4. v0 stored only whether each letter appears, so it couldn't use this; v1 counts letters.
 5. **Advise:** chart how often each letter appears among the remaining candidates to help choose the next guess.
 
 ## What's implemented
 
+[`wordle_solver.py`](wordle_solver.py) (v1):
+
 | Component | What it does |
 |---|---|
-| `Wordle_Solver(wordle_length=5, ...)` | Loads a word dataset (a pandas DataFrame or CSV path) and sets up the constraint state. Word length is configurable. |
-| `new_guess_results(guess_results)` | Parses one guess with its feedback, updates the constraints, filters the candidates, and returns the remaining words; detects when the puzzle is solved |
-| `remaining_letter_frequency()` | Bar chart of letter frequency across the remaining candidates, leaving out letters already known |
-| `display_remaining_words()` | Prints the remaining candidates, five per line |
+| `score(guess, answer)` | Wordle's colors for a guess as a string of `g`, `y` and `b`, with the repeated-letter rules |
+| `parse_feedback("wea!r!y")` / `to_notation(...)` | Convert between the typed notation and `("weary", "bbggb")`. Badly formed input raises `ValueError`. |
+| `Constraints` | What's known so far: the green letter in each slot, letters banned from each slot, and a minimum and maximum count for each letter. Feedback that contradicts an earlier guess raises `ValueError`. |
+| `WordleSolver(words=None)` | Loads a word list (a CSV path, a DataFrame, or a list of words; the NLTK CSV by default) and stores each word as NumPy arrays of letter codes and letter counts |
+| `add_guess("wea!r!y")` | Adds one guess and re-checks only the words still remaining |
+| `solve_from_history([...])` | Applies a whole game's feedback, then filters the word list once |
+| `remaining_letter_frequency()` / `display_remaining_words()` | The letter-frequency chart and printed list from v0 |
+| `letter_count_table(words)` | One row per word, one column per letter, holding how many times the letter appears |
+
+**How it's tested** (`python -m pytest Wordle`, 28 tests):
+- In 250 simulated games, the remaining words are compared with a brute-force search: every word that would have produced exactly the same colors. They match every time; 100 of the games use guesses with repeated letters.
+- Four real games from v0's `test_class()` are replayed, and the solver must end with exactly the answer.
+- There are also tests for scoring edge cases, notation errors, and contradictory feedback.
+
+[`Wordle_Solver_v0.py`](Wordle_Solver_v0.py) is the first version, kept for comparison. It filters with pandas and stores only whether each letter appears, so with repeated letters it can keep words the clues rule out (see [`IDEAS.md`](IDEAS.md)).
 
 ### Input notation
 Type each letter of your guess. Follow a letter with `!` if it came back green or `?` if it came back yellow. Leave gray letters bare.
@@ -107,22 +120,26 @@ Both of the main notebooks above run top to bottom from the `Wordle/` folder, an
 
 ## Results
 
-Real games, replayed through the solver using the NLTK dataset:
+Real games, replayed through both versions of the solver using the NLTK dataset:
 
-| Guess | Feedback typed | Candidates left |
-|---|---|---|
-| WEARY | `wea!r!y` | 63 |
-| APART | `apa!r!t` | 40 |
-| BOARD | `boa!r!d!` | 6 |
-| GUARD | `gua!r!d!` | 5 |
-| **SHARD** | `s!h!a!r!d!` | **solved** |
+| Guess | Feedback typed | Left (v0) | Left (v1) |
+|---|---|---|---|
+| WEARY | `wea!r!y` | 63 | 63 |
+| APART | `apa!r!t` | 40 | **29** |
+| BOARD | `boa!r!d!` | 6 | 6 |
+| GUARD | `gua!r!d!` | 5 | 5 |
+| **SHARD** | `s!h!a!r!d!` | solved | solved |
 
-| Guess | Feedback typed | Candidates left |
-|---|---|---|
-| LEARN | `learn?` | 301 |
-| SOUND | `so!u!n!d` | 4 (count, fount, mount, young) |
-| TICKS | `t?icks` | 2 (fount, mount) |
-| **MOUNT** | `m!o!u!n!t!` | **solved** |
+In APART the first `a` comes back gray and the second green, so the answer has exactly one `a`, and it's in slot 3. v1 uses this; v0 couldn't.
+
+| Guess | Feedback typed | Left (v0) | Left (v1) |
+|---|---|---|---|
+| LEARN | `learn?` | 301 | 301 |
+| SOUND | `so!u!n!d` | 4 (count, fount, mount, young) | 4 |
+| TICKS | `t?icks` | 2 (fount, mount) | 2 |
+| **MOUNT** | `m!o!u!n!t!` | solved | solved |
+
+v1 takes about 0.3 ms per guess on the 8,497-word list.
 
 ## Datasets
 
@@ -134,6 +151,8 @@ Real games, replayed through the solver using the NLTK dataset:
 
 The solver uses the NLTK file by default. A larger dictionary catches rare answers but leaves more candidates per clue.
 
+One data fix happens at load time: the NLTK CSV stores the word `false` as `FALSE`, because a spreadsheet read it as a boolean. `load_words` lowercases every word.
+
 ## Run it
 
 ```bash
@@ -142,13 +161,21 @@ python
 ```
 
 ```python
->>> from Wordle_Solver_v0 import Wordle_Solver
->>> ws = Wordle_Solver(wordle_length=5)        # loads the NLTK CSV in this folder
->>> ws.new_guess_results("learn?")             # 301 candidates + letter-frequency chart
->>> ws.new_guess_results("so!u!n!d")           # ['fount', 'count', 'young', 'mount']
+>>> from wordle_solver import WordleSolver
+>>> ws = WordleSolver()                         # loads the NLTK CSV in this folder
+>>> len(ws.add_guess("learn?"))
+301
+>>> ws.add_guess("so!u!n!d")
+['count', 'fount', 'mount', 'young']
+>>> ws.solve_from_history(["learn?", "so!u!n!d", "t?icks"])   # a whole game at once
+['fount', 'mount']
 ```
 
-Pass `display_remaining_letter_frequency=False` to skip the chart.
+Run the tests from the repository root:
+
+```bash
+python -m pytest Wordle
+```
 
 To run the notebooks, start Jupyter from this folder so the word list loads from disk:
 
@@ -161,15 +188,16 @@ jupyter notebook wordle_engine.ipynb
 
 - Turning an ambiguous, real-world problem into precise constraints.
 - Data engineering: building, cleaning, joining, and feature-engineering text datasets.
-- pandas fluency: boolean masks, index-set intersection, and `isin` filters.
+- Vectorized NumPy filtering, and pandas for loading and reshaping the data.
+- Testing a solver against a brute-force reference on randomly generated games.
 - Iterative product development: validated against real games, with a clear roadmap.
 
 ## Roadmap
 
 The original planning notes, the status of each item, and a measurement of how tight the solver's filtering is are in [`IDEAS.md`](IDEAS.md).
 
-- [ ] **Letter counts:** store how many times each letter appears, not just whether it does, to handle double letters fully.
-- [ ] **Contradiction detection:** warn when typed feedback is inconsistent, for example after a typo.
+- [x] **Letter counts:** use how many times each letter appears, not just whether it does, to handle double letters fully.
+- [x] **Contradiction detection:** badly formed or contradictory feedback raises an error that says what's wrong.
 - [ ] **Self-play mode:** the solver picks a hidden word, plays itself, and reports average guesses over the dictionary.
 - [ ] **Best-guess suggestions:** rank the next guess by expected information gain (entropy).
 

@@ -46,7 +46,7 @@ Each project pairs a from-scratch implementation with validation: against a refe
 | [**Differentiation**](Differentiation/) | Numerical calculus | Symbolic, finite-difference, and automatic differentiation compared for accuracy and speed | SymPy, NumPy, Autograd |
 | [**Conditional_Stability**](Conditional_Stability/) | Numerical stability | Condition numbers, Wilkinson-polynomial perturbation, and stable vs. unstable least squares | NumPy, SciPy, SymPy |
 | [**Unit_testing**](Unit_testing/) | Software engineering | Test-driven verification of utility functions, a `Fraction` class, and a SET card-game counter | pytest |
-| [**Wordle**](Wordle/) | Applied / NLP | Constraint-based Wordle solver backed by curated 5-letter-word datasets, plus a game engine that scores guesses | pandas, NumPy, Matplotlib, Jupyter |
+| [**Wordle**](Wordle/) | Applied / NLP | Exact constraint-based Wordle solver backed by curated 5-letter-word datasets, plus a game engine that scores guesses | NumPy, pandas, pytest, Jupyter |
 
 > New to graph theory? Several projects build on it — [Wikipedia's overview](https://en.wikipedia.org/wiki/Graph_theory) is a good primer.
 
@@ -149,8 +149,10 @@ Each project pairs a from-scratch implementation with validation: against a refe
 
 ### Applied project: Wordle solver
 
-#### Wordle &nbsp;·&nbsp; [`Wordle/Wordle_Solver_v0.py`](Wordle/Wordle_Solver_v0.py) &nbsp; *(v0, in active development)*
-- A constraint-propagation solver. After each guess, it narrows the candidate list using green (right letter, right slot), yellow (right letter, wrong slot), and gray (letter not in word) feedback. It accounts for a repeated letter coming back gray when another copy of it is already confirmed.
+#### Wordle &nbsp;·&nbsp; [`Wordle/wordle_solver.py`](Wordle/wordle_solver.py) &nbsp; *(v1, in active development)*
+- A constraint-propagation solver. After each guess, it narrows the candidate list using green (right letter, right slot), yellow (right letter, wrong slot), and gray (letter not in word) feedback.
+- It tracks a minimum and maximum count for each letter, so repeated letters are handled exactly. A `pytest` suite checks that the remaining words match a brute-force search in 250 random games.
+- Filtering is vectorized with NumPy and takes about 0.3 ms per guess. The first version, [`Wordle_Solver_v0.py`](Wordle/Wordle_Solver_v0.py), is kept for comparison.
 - Shows a letter-frequency chart of the remaining candidates to help pick the next guess.
 - Ships with three curated, feature-engineered word datasets:
 
@@ -169,12 +171,12 @@ Each project pairs a from-scratch implementation with validation: against a refe
 **Input notation:** type each letter of your guess. Follow a letter with `!` if it came back green or `?` if it came back yellow. Leave gray letters bare.
 
 ```python
-from Wordle_Solver_v0 import Wordle_Solver   # run from inside Wordle/
+from wordle_solver import WordleSolver   # run from inside Wordle/
 
-ws = Wordle_Solver(wordle_length=5)
-ws.new_guess_results("wea!r!y")      # 'a' and 'r' are green
-ws.new_guess_results("apa!r!t")      # narrows the candidates further
-ws.new_guess_results("s!h!a!r!d!")   # solved: "shard"
+ws = WordleSolver()
+ws.add_guess("wea!r!y")      # 'a' and 'r' are green: 63 candidates
+ws.add_guess("apa!r!t")      # exactly one 'a': 29 candidates
+ws.solve_from_history(["wea!r!y", "apa!r!t", "boa!r!d!"])   # a whole game at once: 6 candidates
 ```
 
 **[Read more →](Wordle/README.md)**
@@ -221,6 +223,10 @@ cd Unit_testing && python -m pytest test-specs.py
 cd Markov_Chains && python -m pytest test_markov.py
 ```
 
+```bash
+python -m pytest Wordle
+```
+
 ---
 
 ## Repository layout
@@ -247,4 +253,4 @@ Projects1/
 
 - **External datasets are not included.** Several applied functions expect data files in the working directory that aren't in this repository: `movie_data.txt`, `web_stanford.txt`, `top250movies.txt`, `social_network.csv`, `mnist_subset.npz`, `plane.npy`, `stability_data.npy`, `english.txt`, and text corpora for the Markov generator. The core algorithms and the test suites run without them.
 - `Monte_Carlo/monte_carlo_integration` is a Python script without a `.py` extension. Run it with `python monte_carlo_integration`.
-- The Wordle solver is a **v0**. Planned work includes contradiction checking for mistyped feedback, an automated self-play mode, and tracking how many times each letter appears.
+- The Wordle solver (v1) filters candidates exactly but doesn't yet suggest a next guess. Planned work, with the status of each item, is in [`Wordle/IDEAS.md`](Wordle/IDEAS.md).
