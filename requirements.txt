@@ -7,3 +7,4 @@ autograd
 pandas
 seaborn
 pytest
+notebook           # to open the Wordle notebooks
