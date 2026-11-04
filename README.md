@@ -46,7 +46,7 @@ Each project pairs a from-scratch implementation with validation: against a refe
 | [**Differentiation**](Differentiation/) | Numerical calculus | Symbolic, finite-difference, and automatic differentiation compared for accuracy and speed | SymPy, NumPy, Autograd |
 | [**Conditional_Stability**](Conditional_Stability/) | Numerical stability | Condition numbers, Wilkinson-polynomial perturbation, and stable vs. unstable least squares | NumPy, SciPy, SymPy |
 | [**Unit_testing**](Unit_testing/) | Software engineering | Test-driven verification of utility functions, a `Fraction` class, and a SET card-game counter | pytest |
-| [**Wordle**](Wordle/) | Applied / NLP | Constraint-based Wordle solver backed by curated 5-letter-word datasets | pandas, NumPy, Matplotlib |
+| [**Wordle**](Wordle/) | Applied / NLP | Constraint-based Wordle solver backed by curated 5-letter-word datasets, plus a game engine that scores guesses | pandas, NumPy, Matplotlib, Jupyter |
 
 > New to graph theory? Several projects build on it — [Wikipedia's overview](https://en.wikipedia.org/wiki/Graph_theory) is a good primer.
 
@@ -161,6 +161,9 @@ Each project pairs a from-scratch implementation with validation: against a refe
   | Joined NLTK + community list | 9,795 |
 
   Each row encodes the letter in each position, a one-hot indicator for each letter, and (in the NLTK set) vowel and consonant counts.
+- Two Colab notebooks show how the solver was developed:
+  - [`01_Word_Elimination_v3.ipynb`](Wordle/01_Word_Elimination_v3.ipynb) is the hand-edited prototype of the filtering logic, used to play four puzzles at once.
+  - [`wordle_engine.ipynb`](Wordle/wordle_engine.ipynb) is a playable game engine. It scores guesses with Wordle's double-letter rules and prints the result in the solver's input notation.
 
 **Input notation:** type each letter of your guess. Follow a letter with `!` if it came back green or `?` if it came back yellow. Leave gray letters bare.
 
@@ -234,7 +237,7 @@ Projects1/
 ├── Newtons_method/          # Newton's method, backtracking, basins of attraction
 ├── PageRank/                # PageRank: web, NCAA, and actor rankings
 ├── Unit_testing/            # pytest-driven development (+ tests)
-└── Wordle/                  # Wordle solver + curated 5-letter word datasets
+└── Wordle/                  # Wordle solver, game engine, prototype notebooks, word datasets
 ```
 
 ---
