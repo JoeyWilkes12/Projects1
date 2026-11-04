@@ -164,6 +164,7 @@ Each project pairs a from-scratch implementation with validation: against a refe
 - Two Colab notebooks show how the solver was developed:
   - [`01_Word_Elimination_v3.ipynb`](Wordle/01_Word_Elimination_v3.ipynb) is the hand-edited prototype of the filtering logic, used to play four puzzles at once.
   - [`wordle_engine.ipynb`](Wordle/wordle_engine.ipynb) is a playable game engine. It scores guesses with Wordle's double-letter rules and prints the result in the solver's input notation.
+  - Three earlier notebooks show how the word datasets were built and explored. [`IDEAS.md`](Wordle/IDEAS.md) tracks the improvement plan.
 
 **Input notation:** type each letter of your guess. Follow a letter with `!` if it came back green or `?` if it came back yellow. Leave gray letters bare.
 
