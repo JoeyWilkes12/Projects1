@@ -7,7 +7,8 @@
 | **Concepts** | Constraint satisfaction, set intersection, feature engineering, data cleaning, letter-frequency heuristics |
 | **Stack** | pandas, NumPy, Matplotlib |
 | **Code** | [`Wordle_Solver_v0.py`](Wordle_Solver_v0.py), plus three curated word-list CSVs |
-| **Notebooks** | [`01_Word_Elimination_v3.ipynb`](01_Word_Elimination_v3.ipynb) (the solver's prototype) and [`wordle_engine.ipynb`](wordle_engine.ipynb) (a playable game that scores guesses) |
+| **Notebooks** | [`01_Word_Elimination_v3.ipynb`](01_Word_Elimination_v3.ipynb) (the solver's prototype) and [`wordle_engine.ipynb`](wordle_engine.ipynb) (a playable game that scores guesses), plus three earlier notebooks on building and exploring the datasets |
+| **Ideas** | [`IDEAS.md`](IDEAS.md): the original improvement notes, with the status of each |
 | **Status** | v0, in active development |
 
 ---
@@ -87,7 +88,22 @@ This notebook is the other side of the problem: a `Wordle` class that holds a se
 
 I checked `score_guess` against an independent implementation of Wordle's coloring rules on 3,004 random guess/answer pairs from the NLTK list, plus the double-letter cases in the notebook (`vivid`/`vviiv`, `eerie`/`leaee`). Every result matched.
 
-Both notebooks run top to bottom from the `Wordle/` folder, and their saved outputs come from that run. The interactive game is in a commented-out cell at the end of `wordle_engine.ipynb`, because it waits for typed input.
+### Earlier notebooks: building and exploring the datasets
+
+These three are kept as they were last run in Colab. They read from and write to a Google Drive folder, so they don't run as-is from this repo.
+
+| Notebook | What it shows |
+|---|---|
+| [`Parse_NLTK_words_Corpora_v0.ipynb`](Parse_NLTK_words_Corpora_v0.ipynb) | How the NLTK CSVs were built. It loads the 235,892-word NLTK `words` corpus, drops proper nouns (words starting with a capital), and writes one row per word: the letter in each position, a yes/no column for each letter, and vowel and consonant counts (`y` counts as a vowel). It writes one CSV per word length. |
+| [`v1_-_MadalynRose_bank_analysis.ipynb`](v1_-_MadalynRose_bank_analysis.ipynb) | Where each letter tends to sit in a 5-letter word: 26 small charts of letter count by position. This is the "heat map method" in [`IDEAS.md`](IDEAS.md). |
+| [`v2_-_MadalynRose_bank_analysis.ipynb`](v2_-_MadalynRose_bank_analysis.ipynb) | The share of words that contain each letter: `s`, `e` and `a` lead, and `j`, `q` and `z` trail. |
+
+Known issues, left as they are because these are historical notes:
+- In the parsing notebook, `number_of_consonants` is computed as `5 - number_of_vowels`. That is only right for 5-letter words, and the notebook's own output shows -2 for a 16-letter word. The vowel-count step also indexes a DataFrame with a `set`, which pandas 2 and later reject.
+- The `In Word List` column in the NLTK CSV was filled in by hand later, for 17 vowel-heavy starting words.
+- The second chart in the v2 notebook uses `letters` and `counts` from a line that is commented out, so it only worked in the original Colab session.
+
+Both of the main notebooks above run top to bottom from the `Wordle/` folder, and their saved outputs come from that run. The interactive game is in a commented-out cell at the end of `wordle_engine.ipynb`, because it waits for typed input.
 
 ## Results
 
@@ -149,6 +165,8 @@ jupyter notebook wordle_engine.ipynb
 - Iterative product development: validated against real games, with a clear roadmap.
 
 ## Roadmap
+
+The original planning notes, the status of each item, and a measurement of how tight the solver's filtering is are in [`IDEAS.md`](IDEAS.md).
 
 - [ ] **Letter counts:** store how many times each letter appears, not just whether it does, to handle double letters fully.
 - [ ] **Contradiction detection:** warn when typed feedback is inconsistent, for example after a typo.
