@@ -4,12 +4,12 @@
 
 | | |
 |---|---|
-| **Concepts** | Constraint satisfaction, vectorized filtering, feature engineering, data cleaning, property-based testing, letter-frequency heuristics |
+| **Concepts** | Constraint satisfaction, information theory (entropy), vectorized filtering, feature engineering, data cleaning, property-based testing, letter-frequency heuristics |
 | **Stack** | NumPy, pandas, Matplotlib, pytest |
-| **Code** | [`wordle_solver.py`](wordle_solver.py) (v1, current) and [`wordle_engine.py`](wordle_engine.py) (game engine and self-play), with tests in [`test_wordle_solver.py`](test_wordle_solver.py) and [`test_wordle_engine.py`](test_wordle_engine.py); [`Wordle_Solver_v0.py`](Wordle_Solver_v0.py) (the first version, kept for comparison); three curated word-list CSVs |
+| **Code** | [`wordle_solver.py`](wordle_solver.py) (v1, current) and [`wordle_engine.py`](wordle_engine.py) (game engine and self-play) and [`wordle_strategy.py`](wordle_strategy.py) (guess ranking), with tests in [`test_wordle_solver.py`](test_wordle_solver.py) and [`test_wordle_engine.py`](test_wordle_engine.py); [`Wordle_Solver_v0.py`](Wordle_Solver_v0.py) (the first version, kept for comparison); three curated word-list CSVs |
 | **Notebooks** | [`01_Word_Elimination_v3.ipynb`](01_Word_Elimination_v3.ipynb) (the solver's prototype) and [`wordle_engine.ipynb`](wordle_engine.ipynb) (a playable game that scores guesses), plus three earlier notebooks on building and exploring the datasets |
 | **Ideas** | [`IDEAS.md`](IDEAS.md): the original improvement notes, with the status of each |
-| **Status** | v1: exact filtering. Next guess suggestions are in progress (see [`IDEAS.md`](IDEAS.md)) |
+| **Status** | v1: exact filtering and next-guess suggestions. A full benchmark is in progress (see [`IDEAS.md`](IDEAS.md)) |
 
 ---
 
@@ -61,12 +61,60 @@ The datasets also show a core data-science skill: **feature engineering**, which
 | `remaining_letter_frequency()` / `display_remaining_words()` | The letter-frequency chart and printed list from v0 |
 | `letter_count_table(words)` | One row per word, one column per letter, holding how many times the letter appears |
 
-**How it's tested** (`python -m pytest Wordle`, 47 tests in about 10 seconds):
+**How it's tested** (`python -m pytest Wordle`, 64 tests in about 20 seconds):
 - In 250 simulated games, the remaining words are compared with a brute-force search: every word that would have produced exactly the same colors. They match every time; 100 of the games use guesses with repeated letters.
 - Four real games from v0's `test_class()` are replayed, and the solver must end with exactly the answer.
 - There are also tests for scoring edge cases, notation errors, and contradictory feedback.
 - The engine is checked against five real games, including the `butch` game from the notebook. Add your own to `REAL_GAMES` in `test_wordle_engine.py`.
 - Self-play runs through all 3,624 madalynrose words. Each game asserts that the solver never dropped the answer.
+- The pattern table is checked against `score()`, including repeated letters.
+- Suggestion tests cover entropy and heat-map scores on small examples, hard mode only suggesting consistent words, and the frequency tie-break. The entropy strategy must win 60 sampled games.
+
+### Suggesting the next guess
+
+`WordleSolver.suggest(n=5, method="entropy", hard_mode=False)` ranks every allowed guess against the words that could still be the answer.
+
+| Method | Score | Idea |
+|---|---|---|
+| `entropy` (default) | Expected information in bits | A guess splits the candidates into groups by the colors it would show. The more evenly it splits them, the more you expect to learn: 1 bit halves the candidates on average. |
+| `heatmap` | Letter-position frequency | The "heat map method" from the MadalynRose notebook. For each slot, the share of candidates with the guess's letter there, plus, for each distinct letter, the share of candidates containing it. Cheap, with no lookahead. |
+| `frequency` | Word popularity | The most common candidate word. This is roughly how a person plays. |
+
+Ties go to a guess that could itself be the answer, since it might win outright, then to the more common word ([`word_frequency.csv`](word_frequency.csv)), then alphabetically.
+
+```python
+>>> ws = WordleSolver()
+>>> ws.suggest(3)
+    word     score  candidate  frequency
+0  tares  6.358716       True       1.90
+1  rates  6.252396       True       4.88
+2  tears  6.227391       True       4.47
+```
+
+To score guesses fast, the solver builds a table of the color pattern for every (guess, answer) pair: 9,795 × 3,624 patterns, each stored as a base-3 number. It is built with vectorized NumPy on first use, which takes about 7 seconds and 35 MB. The tests check it against `score()`.
+
+**Hard mode and normal mode.** In hard mode (`hard_mode=True`), every guess must be consistent with all the clues so far. That's stricter than the NYT rule, which only requires greens to stay put and yellows to be reused. As the note in [`IDEAS.md`](IDEAS.md) says, hard mode is *easier* for a computer: there are fewer guesses to score. Normal mode lets the solver play a word that can't be the answer but splits the candidates better. After `t!ar?es`, for example, 18 words remain, and the best guess is `choup`, which isn't one of them.
+
+**Sample results**, playing 400 randomly chosen answers from the madalynrose list:
+
+| Strategy | Won in 6 | Average guesses | Worst game |
+|---|---|---|---|
+| `entropy` | **100%** | **3.57** | 5 |
+| `entropy`, hard mode | 98.0% | 3.78 | 9 |
+| `heatmap` | 98.3% | 3.86 | 11 |
+| `frequency` | 94.8% | 4.42 | 9 |
+
+A full benchmark over every answer, and a ranking of starting words, is the next PR.
+
+### Word lists
+
+By default, `WordleSolver()` uses separate lists for:
+- **possible answers:** the madalynrose list, 3,624 common words;
+- **allowed guesses:** the joined list, 9,795 words.
+
+The NLTK list includes rare words, such as `urari` and `uzara`, that are unlikely answers but are fine to guess. Pass `WordleSolver(words, guesses)` to use other lists, or `WordleSolver(words)` to guess only from `words`.
+
+`word_frequency.csv` is built by [`build_word_frequency.py`](build_word_frequency.py) from the [`wordfreq`](https://github.com/rspeer/wordfreq) package by Robyn Speer. Its data is licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/), so `word_frequency.csv` is shared under the same license. The solver only reads the CSV, so `wordfreq` isn't needed to run it.
 
 [`wordle_engine.py`](wordle_engine.py):
 
@@ -75,7 +123,8 @@ The datasets also show a core data-science skill: **feature engineering**, which
 | `Wordle(wordle=None, allowed=None, seed=None)` | The game from `wordle_engine.ipynb` as a module, using the solver's `score` function. `guess()` returns feedback in the solver's notation. With no wordle given, it picks a random word. `allowed` restricts guesses to a word list, as the real game does. |
 | `Wordle.play(guesses=None)` / `Wordle.from_hidden_input()` | Play interactively or replay a list of guesses; set the word with hidden input |
 | `self_play(answer, strategy)` | The solver plays the engine: `strategy(solver)` picks each guess. It raises if the solver ever drops the answer. |
-| `random_candidate(seed)` | Baseline strategy, v0's planned `random_solver`: guess a random word that could still be the answer |
+| `random_candidate(seed)` / `best_guess(method, hard_mode)` | Strategies: a random word that could still be the answer (v0's planned `random_solver`), or the solver's top suggestion |
+| `self_play(..., first_guess="crane")` / `simulate(..., first_guess=...)` | Fix the opening word |
 | `simulate(answers, strategy)` / `summarize(results)` | Play one game per answer; report the win rate, average guesses and the distribution of guesses per game |
 
 **Self-play baseline:** the `random_candidate` strategy, playing every word in each list (games continue past six guesses so the full distribution is visible):
@@ -141,7 +190,7 @@ Both of the main notebooks above run top to bottom from the `Wordle/` folder, an
 
 ## Results
 
-Real games, replayed through both versions of the solver using the NLTK dataset:
+Real games, replayed through both versions of the solver using the NLTK dataset (`WordleSolver(load_words())` for v1):
 
 | Guess | Feedback typed | Left (v0) | Left (v1) |
 |---|---|---|---|
@@ -170,7 +219,7 @@ v1 takes about 0.3 ms per guess on the 8,497-word list.
 | `madalynrose list of 5 letter words parsed v0.csv` | 3,624 | a community 5-letter word list, with similar position and letter columns |
 | `Joined NLTK & Github 5 letter words v0.csv` | 9,795 | the two lists combined and deduplicated |
 
-The solver uses the NLTK file by default. A larger dictionary catches rare answers but leaves more candidates per clue.
+`WordleSolver()` uses the madalynrose list as possible answers and the joined list as allowed guesses (see **Word lists** above). `load_words()` on its own reads the NLTK file. A larger answer list catches rare answers but leaves more candidates per clue.
 
 One data fix happens at load time: the NLTK CSV stores the word `false` as `FALSE`, because a spreadsheet read it as a boolean. `load_words` lowercases every word.
 
@@ -183,13 +232,16 @@ python
 
 ```python
 >>> from wordle_solver import WordleSolver
->>> ws = WordleSolver()                         # loads the NLTK CSV in this folder
+>>> ws = WordleSolver()                         # madalynrose answers, joined-list guesses
 >>> len(ws.add_guess("learn?"))
-301
+172
 >>> ws.add_guess("so!u!n!d")
-['count', 'fount', 'mount', 'young']
+['count', 'mount', 'young']
+>>> ws.suggest(1)                               # what to play next
+    word     score  candidate  frequency
+0  count  1.584963       True       4.83
 >>> ws.solve_from_history(["learn?", "so!u!n!d", "t?icks"])   # a whole game at once
-['fount', 'mount']
+['mount']
 ```
 
 Run the tests from the repository root:
@@ -220,7 +272,8 @@ The original planning notes, the status of each item, and a measurement of how t
 - [x] **Letter counts:** use how many times each letter appears, not just whether it does, to handle double letters fully.
 - [x] **Contradiction detection:** badly formed or contradictory feedback raises an error that says what's wrong.
 - [x] **Self-play mode:** the engine picks or is given a hidden word, the solver plays it, and `simulate` reports average guesses over a word list.
-- [ ] **Best-guess suggestions:** rank the next guess by expected information gain (entropy).
+- [x] **Best-guess suggestions:** rank the next guess by expected information gain (entropy), the heat-map score, or word frequency.
+- [ ] **Benchmark and best starting word:** play every answer and rank opening words.
 
 ## Further reading
 

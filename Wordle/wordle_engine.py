@@ -16,6 +16,9 @@ plays many games and summarizes them.
     'sau?c!e'
     >>> self_play("shard", random_candidate(seed=0)).solved
     True
+
+Strategies: ``random_candidate`` (a baseline) and ``best_guess``, which
+plays the solver's top suggestion.
 """
 import random
 from dataclasses import dataclass, field
@@ -139,6 +142,15 @@ def random_candidate(seed=None):
 
     def choose(solver):
         return rng.choice(solver.remaining_words)
+
+    return choose
+
+
+def best_guess(method="entropy", hard_mode=False):
+    """Strategy: play the solver's top suggestion (see ``WordleSolver.suggest``)."""
+
+    def choose(solver):
+        return solver.suggest(1, method=method, hard_mode=hard_mode)["word"].iloc[0]
 
     return choose
 

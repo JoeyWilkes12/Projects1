@@ -22,6 +22,11 @@ What changed from v0:
   codes and letter counts, so each constraint is one array comparison.
 * **Input checks.** Badly typed feedback, and feedback that contradicts an
   earlier guess, raise ``ValueError`` with a message saying what's wrong.
+* **Guess suggestions.** ``suggest()`` ranks every allowed guess by how much
+  it is expected to narrow the candidates (see ``wordle_strategy.py``).
+  Possible answers and allowed guesses are separate lists: by default the
+  answers are the madalynrose list (3,624 common words) and any word in the
+  joined list (9,795) may be guessed.
 """
 import os
 import string
@@ -29,10 +34,16 @@ from collections import Counter
 
 import numpy as np
 
+from wordle_strategy import encode, entropy, heatmap_scores, letter_counts, pattern_matrix, rank
+
 GREEN, YELLOW, GRAY = "g", "y", "b"
 ALPHABET = string.ascii_lowercase
 HERE = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_WORDS_CSV = os.path.join(HERE, "5 letter words parsed - NLTK Words Corpora - v0.csv")
+NLTK_CSV = os.path.join(HERE, "5 letter words parsed - NLTK Words Corpora - v0.csv")
+ANSWERS_CSV = os.path.join(HERE, "madalynrose list of 5 letter words parsed v0.csv")
+GUESSES_CSV = os.path.join(HERE, "Joined NLTK & Github 5 letter words v0.csv")
+FREQUENCY_CSV = os.path.join(HERE, "word_frequency.csv")
+DEFAULT_WORDS_CSV = NLTK_CSV  # load_words() default
 
 
 def score(guess, answer):
@@ -207,36 +218,50 @@ def letter_count_table(words):
     import pandas as pd
 
     words = list(words)
-    codes = np.array([[ord(c) - 97 for c in w] for w in words], dtype=np.int8)
-    counts = np.zeros((len(words), 26), dtype=np.int8)
-    for slot in range(codes.shape[1]):
-        np.add.at(counts, (np.arange(len(words)), codes[:, slot]), 1)
+    counts = letter_counts(encode(words))
     return pd.DataFrame(counts, index=pd.Index(words, name="word"), columns=list(ALPHABET))
 
 
 class WordleSolver:
-    """Narrows a word list down using Wordle feedback.
+    """Narrows a word list down using Wordle feedback, and suggests guesses.
 
-    >>> solver = WordleSolver()                    # NLTK word list
+    ``words``: the possible answers (a CSV path, DataFrame or list). By
+    default, the madalynrose list.
+
+    ``guesses``: extra words that may be guessed but aren't possible
+    answers. By default, the joined NLTK + madalynrose list when ``words``
+    is also the default; otherwise none, so only ``words`` are guessed.
+
+    ``frequency``: a CSV with ``word`` and ``zipf`` columns, used to break
+    ties between suggestions. By default ``word_frequency.csv``, if present.
+
+    >>> solver = WordleSolver()
     >>> remaining = solver.add_guess("wea!r!y")    # one guess at a time...
     >>> remaining = solver.solve_from_history(["wea!r!y", "apa!r!t"])  # ...or a whole game
     """
 
-    def __init__(self, words=None, wordle_length=5):
+    def __init__(self, words=None, guesses=None, wordle_length=5, frequency=None):
         self.wordle_length = wordle_length
+        if words is None:
+            words = ANSWERS_CSV
+            if guesses is None:
+                guesses = GUESSES_CSV
         self.words = np.array(load_words(words, wordle_length))
         if len(self.words) == 0:
             raise ValueError(f"no {wordle_length}-letter words in the word list")
         # letter codes (0-25) for every slot, and letter counts, one row per word
-        self._codes = (
-            np.frombuffer("".join(self.words).encode("ascii"), dtype=np.uint8)
-            .reshape(len(self.words), wordle_length)
-            .astype(np.int8)
-            - 97
-        )
-        self._counts = np.zeros((len(self.words), 26), dtype=np.int8)
-        for slot in range(wordle_length):
-            np.add.at(self._counts, (np.arange(len(self.words)), self._codes[:, slot]), 1)
+        self._codes = encode(self.words)
+        self._counts = letter_counts(self._codes)
+        # allowed guesses: always includes the possible answers
+        extra = set(load_words(guesses, wordle_length)) if guesses is not None else set()
+        self.guess_words = np.array(sorted(extra | set(self.words.tolist())))
+        self._guess_codes = encode(self.guess_words)
+        self._guess_counts = letter_counts(self._guess_codes)
+        self._answer_rows = np.searchsorted(self.guess_words, self.words)  # answer i -> guess row
+        self._frequency_path = frequency if frequency is not None else FREQUENCY_CSV
+        self._frequency = None
+        self._patterns = None
+        self._opening_scores = {}
         self.reset()
 
     def reset(self):
@@ -253,7 +278,7 @@ class WordleSolver:
         guess, pattern = parse_feedback(guess_results)
         self.constraints.add(guess, pattern)  # raises on bad length or contradiction
         self.history.append((guess, pattern))
-        self._remaining = self._remaining[self._mask(self._remaining)]
+        self._remaining = self._remaining[self._mask(self._codes[self._remaining], self._counts[self._remaining])]
         return self.remaining_words
 
     def solve_from_history(self, guesses_results):
@@ -264,14 +289,14 @@ class WordleSolver:
             guess, pattern = parse_feedback(gr)
             self.constraints.add(guess, pattern)
             self.history.append((guess, pattern))
-        self._remaining = self._remaining[self._mask(self._remaining)]
+        self._remaining = self._remaining[self._mask(self._codes[self._remaining], self._counts[self._remaining])]
         return self.remaining_words
 
-    def _mask(self, rows):
-        """Boolean mask over ``rows`` of the words that satisfy every constraint."""
+    def _mask(self, codes, counts):
+        """Boolean mask of the words (given as letter codes and letter counts)
+        that satisfy every constraint."""
         c = self.constraints
-        codes, counts = self._codes[rows], self._counts[rows]
-        mask = np.ones(len(rows), dtype=bool)
+        mask = np.ones(len(codes), dtype=bool)
         for slot, letter in c.greens.items():
             mask &= codes[:, slot] == ord(letter) - 97
         for slot, letters in c.banned.items():
@@ -282,6 +307,79 @@ class WordleSolver:
         for letter, n in c.max_count.items():
             mask &= counts[:, ord(letter) - 97] <= n
         return mask
+
+    # ----- suggestions -------------------------------------------------------
+
+    @property
+    def patterns(self):
+        """Color pattern of every allowed guess (rows) against every possible
+        answer (columns). Built on first use: about 7 seconds and 35 MB for
+        the default lists."""
+        if self._patterns is None:
+            self._patterns = pattern_matrix(self._guess_codes, self._codes)
+        return self._patterns
+
+    @property
+    def frequency(self):
+        """Zipf frequency of each allowed guess (0 if unknown): 3 is about
+        once per million words, 6 about once per thousand."""
+        if self._frequency is None:
+            self._frequency = np.zeros(len(self.guess_words))
+            if self._frequency_path and os.path.exists(self._frequency_path):
+                import pandas as pd
+
+                f = pd.read_csv(self._frequency_path, dtype={"word": str}, keep_default_na=False)
+                lookup = dict(zip(f["word"], f["zipf"]))
+                self._frequency = np.array([lookup.get(w, 0.0) for w in self.guess_words])
+        return self._frequency
+
+    def suggest(self, n=5, method="entropy", hard_mode=False):
+        """Rank the next guess. Returns a DataFrame of the top ``n`` with
+        columns ``word``, ``score``, ``candidate`` (could be the answer) and
+        ``frequency``.
+
+        ``method``: ``"entropy"`` (expected bits of information),
+        ``"heatmap"`` (letter-position frequency) or ``"frequency"`` (most
+        common candidate). See ``wordle_strategy.py``.
+
+        ``hard_mode``: only consider guesses consistent with every clue so
+        far. This is stricter than the NYT's hard mode, which only requires
+        greens to stay put and yellows to be reused.
+        """
+        import pandas as pd
+
+        remaining = self._remaining
+        if len(remaining) == 0:
+            raise ValueError("no possible answers left: is the answer in the word list?")
+        if hard_mode:
+            pool = np.flatnonzero(self._mask(self._guess_codes, self._guess_counts))
+        else:
+            pool = np.arange(len(self.guess_words))
+        is_candidate = np.isin(pool, self._answer_rows[remaining])
+        frequency = self.frequency[pool]
+        if method == "entropy":
+            key = ("entropy", hard_mode)
+            if not self.history and key in self._opening_scores:
+                scores = self._opening_scores[key]
+            else:
+                scores = entropy(self.patterns[np.ix_(pool, remaining)])
+                if not self.history:
+                    self._opening_scores[key] = scores
+        elif method == "heatmap":
+            scores = heatmap_scores(self._guess_codes[pool], self._codes[remaining], self._counts[remaining])
+        elif method == "frequency":
+            scores = np.where(is_candidate, frequency, -np.inf)
+        else:
+            raise ValueError(f"unknown method {method!r}; use 'entropy', 'heatmap' or 'frequency'")
+        top = rank(scores, self.guess_words[pool], is_candidate, frequency, n)
+        return pd.DataFrame(
+            {
+                "word": self.guess_words[pool][top],
+                "score": scores[top],
+                "candidate": is_candidate[top],
+                "frequency": frequency[top],
+            }
+        )
 
     # ----- results ---------------------------------------------------------
 
