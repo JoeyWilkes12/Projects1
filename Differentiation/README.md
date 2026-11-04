@@ -93,7 +93,7 @@ python -i differentiation.py
 
 ## Ideas to extend it
 
-- Add **complex-step differentiation**, $f'(x) \approx \operatorname{Im} f(x + ih)/h$. It has no subtraction, so no round-off blow-up, and $h = 10^{-20}$ works.
+- Add **complex-step differentiation**, $f'(x) \approx \mathrm{Im} f(x + ih)/h$. It has no subtraction, so no round-off blow-up, and $h = 10^{-20}$ works.
 - Re-implement the benchmark in JAX and compare forward-mode with reverse-mode autodiff.
 - Use Richardson extrapolation to build higher-order quotients automatically.
 
