@@ -28,14 +28,14 @@ These are my original planning notes for the Wordle solver, followed by where ea
 
 | Item | Status | Where things stand |
 |---|---|---|
-| **Finish the solver** | Partly done | v1 filters the candidates exactly (see below), and `wordle_engine.self_play` lets it play complete games. v0's `random_solver` exists as the `random_candidate` strategy. It doesn't yet suggest a good next guess. |
-| Metrics to pick the best word | Not started | The only aid is the letter-frequency chart (`remaining_letter_frequency`), which a person has to read. |
-| Word popularity as a tie-breaker | Not started | None of the three datasets has a frequency column. The parsing notebook has a commented-out `nltk.download('brown')`; the Brown corpus is one possible source of word counts. |
-| Parameter for the first guess | Not started | |
+| **Finish the solver** | Done (v1) | v1 filters the candidates exactly (see below), suggests the next guess with `suggest()`, and plays complete games through `wordle_engine.self_play`. v0's `random_solver` exists as the `random_candidate` strategy. |
+| Metrics to pick the best word | Done | `suggest(method=...)` with three metrics: `entropy` (expected bits of information), `heatmap` and `frequency`. In a 400-game sample, entropy won every game, averaging 3.57 guesses. |
+| Word popularity as a tie-breaker | Done | `word_frequency.csv` has a Zipf frequency for each word, from the `wordfreq` package rather than the Brown corpus, which is 1960s text. It breaks ties after "could this guess be the answer?". |
+| Parameter for the first guess | Done | `self_play(..., first_guess="crane")` and `simulate(..., first_guess=...)`. Without it, the entropy opener is cached after the first game. |
 | **Faster solving from a list of guesses** | Done (v1) | `solve_from_history([...])` builds the constraints from the whole list, then filters the word list once. `add_guess` re-checks only the words still remaining. Filtering is vectorized with NumPy and takes about 0.3 ms per guess on the 8,497-word list. |
 | **Use repeated-letter information** | Done (v1) | Each guess sets a minimum count for every green or yellow letter, and a maximum when another copy came back gray. Each yellow or gray letter is also banned from its slot. |
 | Store letter counts in the dataset | Done, computed at load time | v1 computes the counts from the words when they load, so the 1.5 MB CSVs didn't need regenerating. `letter_count_table(words)` returns them as a DataFrame. |
-| **Heat map method** | Explored, not in the solver | `v1_-_MadalynRose_bank_analysis.ipynb` plots how often each letter appears in each of the five positions. `Wordle_Solver_v0.py` imports seaborn "for heatmap" but doesn't use it. |
+| **Heat map method** | Done | `suggest(method="heatmap")` scores guesses by how often each letter appears in each slot among the candidates, the statistic plotted in `v1_-_MadalynRose_bank_analysis.ipynb`. It's cheaper than entropy but weaker: 98.3% of the sample games won, against 100%. |
 | **Best starting word** | Groundwork only | The `In Word List` column of the NLTK CSV records a hand check of 17 vowel-heavy openers (`adieu`, `audio`, `ourie`, …) against the list of words Wordle accepts. No ranking has been done. |
 | **Scale up testing** | Done | Engine: `test_score_guess()` in `wordle_engine.ipynb` asserts the double-letter cases and the bad-input checks. Solver: `test_wordle_solver.py` checks v1 against brute force on 250 random games and replays four real games. Engine and solver together: `test_wordle_engine.py` plays all 3,624 madalynrose words through `self_play`, which fails if the answer is ever dropped. 47 tests run in about 10 seconds. |
 
@@ -63,7 +63,7 @@ Both need letter counts, which v1 adds.
 | `fewer` isn't in the NLTK list; "maybe join the two datasets" | `01_Word_Elimination_v3.ipynb` | Done (the joined CSV), though the solver still loads the NLTK list by default. |
 | A 6-letter word bank, or a bigger 5-letter one | both MadalynRose notebooks | Partly done. The parsing notebook writes a CSV for any word length, and the solver takes a `wordle_length` argument. Only the 5-letter CSVs are in the repo. |
 | Number of duplicates of each letter, per word | `v2_-_MadalynRose_bank_analysis.ipynb` | Not started. This is the same work as "store letter counts". |
-| Separate likely answers from words Wordle merely accepts | `01_Word_Elimination_v3.ipynb` (comments on `cothy`, `zloty`) | Not started. The NLTK list includes rare words such as `urari` and `uzara`, which make the candidate lists longer than they need to be. |
+| Separate likely answers from words Wordle merely accepts | `01_Word_Elimination_v3.ipynb` (comments on `cothy`, `zloty`) | Done. `WordleSolver()` uses the madalynrose list as possible answers and the joined list (9,795) as allowed guesses. |
 | Validate the `!`/`?` input notation | `01_Word_Elimination_v3.ipynb` (last cell) | Done (v1). `parse_feedback` rejects a mark with no letter before it, a doubled mark and characters other than letters, `!` and `?`. `Constraints` rejects feedback that contradicts an earlier guess. |
 | Choose a random word as the wordle | `wordle_engine.ipynb` | Done. `Wordle()` with no word picks one at random, and `seed=` makes the choice repeatable. |
-| Hard mode | the note above | Not started. Neither the engine nor the solver has a hard-mode option. |
+| Hard mode | the note above | Done in the solver: `suggest(hard_mode=True)` only considers guesses consistent with every clue, which is stricter than the NYT rule. As the note predicts, it's easier to compute but plays worse: 98.0% won and 3.78 average guesses in the sample, against 100% and 3.57 in normal mode. |
