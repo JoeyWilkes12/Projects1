@@ -46,7 +46,7 @@ Each project pairs a from-scratch implementation with validation: against a refe
 | [**Differentiation**](Differentiation/) | Numerical calculus | Symbolic, finite-difference, and automatic differentiation compared for accuracy and speed | SymPy, NumPy, Autograd |
 | [**Conditional_Stability**](Conditional_Stability/) | Numerical stability | Condition numbers, Wilkinson-polynomial perturbation, and stable vs. unstable least squares | NumPy, SciPy, SymPy |
 | [**Unit_testing**](Unit_testing/) | Software engineering | Test-driven verification of utility functions, a `Fraction` class, and a SET card-game counter | pytest |
-| [**Wordle**](Wordle/) | Applied / NLP | Exact constraint-based Wordle solver backed by curated 5-letter-word datasets, plus a game engine that scores guesses | NumPy, pandas, pytest, Jupyter |
+| [**Wordle**](Wordle/) | Applied / NLP | Exact constraint-based Wordle solver with entropy-based guess suggestions: solves all 3,624 test answers in six or fewer guesses (3.60 on average) | NumPy, pandas, pytest, Jupyter |
 
 > New to graph theory? Several projects build on it — [Wikipedia's overview](https://en.wikipedia.org/wiki/Graph_theory) is a good primer.
 
@@ -154,7 +154,8 @@ Each project pairs a from-scratch implementation with validation: against a refe
 - It tracks a minimum and maximum count for each letter, so repeated letters are handled exactly. A `pytest` suite checks that the remaining words match a brute-force search in 250 random games.
 - Filtering is vectorized with NumPy and takes about 0.3 ms per guess. The first version, [`Wordle_Solver_v0.py`](Wordle/Wordle_Solver_v0.py), is kept for comparison.
 - [`wordle_engine.py`](Wordle/wordle_engine.py) plays the game, and self-play runs the solver through every word in a list. Guessing any word that could still be the answer wins 94.5% of the 3,624 madalynrose games within six guesses.
-- `suggest()` ranks the next guess by expected information (entropy), letter-position frequency, or word popularity. Entropy won all 400 games in a random sample, averaging 3.57 guesses.
+- `suggest()` ranks the next guess by expected information (entropy), letter-position frequency, or word popularity.
+- **Benchmark:** entropy solves all 3,624 possible answers within six guesses, averaging 3.60. The best opener is `tares`; vowel-heavy openers like `adieu` and `audio` do worst ([`Wordle_benchmark.ipynb`](Wordle/Wordle_benchmark.ipynb)).
 - Shows a letter-frequency chart of the remaining candidates to help pick the next guess.
 - Ships with three curated, feature-engineered word datasets:
 
@@ -256,4 +257,4 @@ Projects1/
 
 - **External datasets are not included.** Several applied functions expect data files in the working directory that aren't in this repository: `movie_data.txt`, `web_stanford.txt`, `top250movies.txt`, `social_network.csv`, `mnist_subset.npz`, `plane.npy`, `stability_data.npy`, `english.txt`, and text corpora for the Markov generator. The core algorithms and the test suites run without them.
 - `Monte_Carlo/monte_carlo_integration` is a Python script without a `.py` extension. Run it with `python monte_carlo_integration`.
-- The Wordle solver's suggestions have been checked on a 400-game sample. A full benchmark over every answer is still to come. Planned work, with the status of each item, is in [`Wordle/IDEAS.md`](Wordle/IDEAS.md).
+- The Wordle benchmark uses a community answer list that includes plurals, which favors `s`-heavy openers. Results against the NYT's own answer list may differ. Planned work, with the status of each item, is in [`Wordle/IDEAS.md`](Wordle/IDEAS.md).

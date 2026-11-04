@@ -7,9 +7,9 @@
 | **Concepts** | Constraint satisfaction, information theory (entropy), vectorized filtering, feature engineering, data cleaning, property-based testing, letter-frequency heuristics |
 | **Stack** | NumPy, pandas, Matplotlib, pytest |
 | **Code** | [`wordle_solver.py`](wordle_solver.py) (v1, current) and [`wordle_engine.py`](wordle_engine.py) (game engine and self-play) and [`wordle_strategy.py`](wordle_strategy.py) (guess ranking), with tests in [`test_wordle_solver.py`](test_wordle_solver.py) and [`test_wordle_engine.py`](test_wordle_engine.py); [`Wordle_Solver_v0.py`](Wordle_Solver_v0.py) (the first version, kept for comparison); three curated word-list CSVs |
-| **Notebooks** | [`01_Word_Elimination_v3.ipynb`](01_Word_Elimination_v3.ipynb) (the solver's prototype) and [`wordle_engine.ipynb`](wordle_engine.ipynb) (a playable game that scores guesses), plus three earlier notebooks on building and exploring the datasets |
+| **Notebooks** | [`Wordle_benchmark.ipynb`](Wordle_benchmark.ipynb) (results and charts), [`01_Word_Elimination_v3.ipynb`](01_Word_Elimination_v3.ipynb) (the solver's prototype) and [`wordle_engine.ipynb`](wordle_engine.ipynb) (a playable game that scores guesses), plus three earlier notebooks on building and exploring the datasets |
 | **Ideas** | [`IDEAS.md`](IDEAS.md): the original improvement notes, with the status of each |
-| **Status** | v1: exact filtering and next-guess suggestions. A full benchmark is in progress (see [`IDEAS.md`](IDEAS.md)) |
+| **Status** | v1: exact filtering, next-guess suggestions, and a full benchmark. The entropy strategy solves all 3,624 answers within six guesses, averaging 3.60. |
 
 ---
 
@@ -61,7 +61,7 @@ The datasets also show a core data-science skill: **feature engineering**, which
 | `remaining_letter_frequency()` / `display_remaining_words()` | The letter-frequency chart and printed list from v0 |
 | `letter_count_table(words)` | One row per word, one column per letter, holding how many times the letter appears |
 
-**How it's tested** (`python -m pytest Wordle`, 64 tests in about 20 seconds):
+**How it's tested** (`python -m pytest Wordle`, 66 tests in about 22 seconds):
 - In 250 simulated games, the remaining words are compared with a brute-force search: every word that would have produced exactly the same colors. They match every time; 100 of the games use guesses with repeated letters.
 - Four real games from v0's `test_class()` are replayed, and the solver must end with exactly the answer.
 - There are also tests for scoring edge cases, notation errors, and contradictory feedback.
@@ -95,16 +95,44 @@ To score guesses fast, the solver builds a table of the color pattern for every 
 
 **Hard mode and normal mode.** In hard mode (`hard_mode=True`), every guess must be consistent with all the clues so far. That's stricter than the NYT rule, which only requires greens to stay put and yellows to be reused. As the note in [`IDEAS.md`](IDEAS.md) says, hard mode is *easier* for a computer: there are fewer guesses to score. Normal mode lets the solver play a word that can't be the answer but splits the candidates better. After `t!ar?es`, for example, 18 words remain, and the best guess is `choup`, which isn't one of them.
 
-**Sample results**, playing 400 randomly chosen answers from the madalynrose list:
+## Benchmark
+
+[`benchmark.py`](benchmark.py) plays every possible answer, all 3,624 words in the madalynrose list, with each strategy, guessing from the 9,795-word joined list. It writes [`results/`](results/), and [`Wordle_benchmark.ipynb`](Wordle_benchmark.ipynb) charts the results. The run takes about 12 minutes, because `best_guess` caches suggestions for openings that games share.
 
 | Strategy | Won in 6 | Average guesses | Worst game |
 |---|---|---|---|
-| `entropy` | **100%** | **3.57** | 5 |
-| `entropy`, hard mode | 98.0% | 3.78 | 9 |
-| `heatmap` | 98.3% | 3.86 | 11 |
-| `frequency` | 94.8% | 4.42 | 9 |
+| `entropy` | **100%** | **3.598** | **6** |
+| `entropy`, hard mode | 97.57% | 3.847 | 12 |
+| `heatmap` | 96.72% | 3.947 | 12 |
+| random candidate (baseline) | 94.81% | 4.361 | 14 |
+| `frequency` | 93.65% | 4.442 | 11 |
 
-A full benchmark over every answer, and a ranking of starting words, is the next PR.
+The entropy strategy solves every answer, needing six guesses in only 11 of 3,624 games.
+
+Picking the most common word that fits, which is roughly how people play, does slightly *worse* than picking a random word that fits. Common words aren't more informative guesses.
+
+### Best starting word
+
+[`results/openers.csv`](results/openers.csv) scores all 9,795 allowed guesses as an opener. A shortlist was also played in full: each word was the first guess in all 3,624 games, and the entropy strategy chose every guess after it.
+
+| Opener | Entropy (bits) | Rank of 9,795 | Average guesses | Won in 6 |
+|---|---|---|---|---|
+| **`tares`** | 6.36 | 1 | **3.598** | 100% |
+| `tires` | 6.17 | 6 | 3.614 | 100% |
+| `slate` | 6.08 | 11 | 3.634 | 100% |
+| `stare` | 6.04 | 19 | 3.653 | 100% |
+| `trace` | 5.60 | 299 | 3.668 | 100% |
+| `crane` | 5.45 | 572 | 3.689 | 100% |
+| `raise` | 5.95 | 33 | 3.714 | 100% |
+| `adieu` | 4.88 | 2,775 | 3.848 | 100% |
+| `audio` | 4.35 | 5,914 | 3.871 | 100% |
+| `youse` | 4.85 | 2,940 | 3.884 | 99.81% |
+
+**`tares` is the best opener for this answer list.** It tests the most common letters in their most common slots: `s` ends 33% of answers, and `e` is the fourth letter of 23%.
+
+**Vowel-heavy openers are the weakest.** The seven hand-checked in the NLTK CSV's `In Word List` column (`adieu`, `audio`, `ourie`, `auloi`, `yowie`, `youse`, `noyau`) average 3.81–3.89 guesses. Vowels are so common that they rarely come back gray, so these guesses split the answers into few, large groups.
+
+The answer list includes plurals, which is why `s` matters so much. The NYT's own answer list mostly avoids plurals, so for the real game an opener like `slate` or `crane` would likely rank higher than it does here.
 
 ### Word lists
 
@@ -263,6 +291,7 @@ jupyter notebook wordle_engine.ipynb
 - Data engineering: building, cleaning, joining, and feature-engineering text datasets.
 - Vectorized NumPy filtering, and pandas for loading and reshaping the data.
 - Testing a solver against a brute-force reference on randomly generated games.
+- Information theory in practice: ranking guesses by expected entropy, and benchmarking strategies across thousands of simulated games.
 - Iterative product development: validated against real games, with a clear roadmap.
 
 ## Roadmap
@@ -273,7 +302,7 @@ The original planning notes, the status of each item, and a measurement of how t
 - [x] **Contradiction detection:** badly formed or contradictory feedback raises an error that says what's wrong.
 - [x] **Self-play mode:** the engine picks or is given a hidden word, the solver plays it, and `simulate` reports average guesses over a word list.
 - [x] **Best-guess suggestions:** rank the next guess by expected information gain (entropy), the heat-map score, or word frequency.
-- [ ] **Benchmark and best starting word:** play every answer and rank opening words.
+- [x] **Benchmark and best starting word:** play every answer and rank opening words (see **Benchmark** above).
 
 ## Further reading
 
