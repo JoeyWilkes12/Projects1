@@ -81,11 +81,13 @@ This notebook is the other side of the problem: a `Wordle` class that holds a se
 - `getpass` hides the secret word as it's typed, so one person can set a puzzle for another.
 - `score_guess` handles repeated letters in two passes. It marks greens first and uses up those letters, then hands out yellows from what's left, left to right. A letter that appears more often in the guess than in the answer is gray for the extra copies.
 - The output is written in the solver's input notation: `sauce` against `butch` prints `sau?c!e`. The engine's output can be passed straight to the solver, which is the basis for the planned self-play mode.
-- The saved output shows one full game: `sauce`, `hunch`, `mulch`, and `dutch`, then solved with `butch`.
+- `play_game` allows six guesses and reveals the word if you run out. A typo, such as the wrong length or a digit, prints an error and doesn't use up a guess.
+- `play_game(guesses=[...])` replays a list of guesses instead of prompting. The notebook uses it to replay a real game: `sauce`, `hunch`, `mulch`, and `dutch`, then solved with `butch`.
+- `test_score_guess()` checks the scoring on the double-letter cases above and confirms that bad input is rejected.
 
 I checked `score_guess` against an independent implementation of Wordle's coloring rules on 3,004 random guess/answer pairs from the NLTK list, plus the double-letter cases in the notebook (`vivid`/`vviiv`, `eerie`/`leaee`). Every result matched.
 
-> **Note:** both notebooks are saved as they were last run in Colab. In `01_Word_Elimination_v3.ipynb`, cells were edited and re-run out of order, so a few saved outputs (the letter-frequency chart and the side-by-side comparisons near the end) don't match the code above them.
+Both notebooks run top to bottom from the `Wordle/` folder, and their saved outputs come from that run. The interactive game is in a commented-out cell at the end of `wordle_engine.ipynb`, because it waits for typed input.
 
 ## Results
 
@@ -131,6 +133,13 @@ python
 ```
 
 Pass `display_remaining_letter_frequency=False` to skip the chart.
+
+To run the notebooks, start Jupyter from this folder so the word list loads from disk:
+
+```bash
+cd Wordle
+jupyter notebook wordle_engine.ipynb
+```
 
 ## Skills demonstrated
 
