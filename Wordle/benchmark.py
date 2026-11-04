@@ -1,6 +1,6 @@
 """Benchmark the solver and rank starting words.
 
-    python benchmark.py            # about 10 minutes
+    python benchmark.py            # about 12 minutes
 
 Plays every possible answer (the 3,624-word madalynrose list) with each
 strategy, then ranks opening words, and writes the results to ``results/``:
