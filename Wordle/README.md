@@ -7,6 +7,7 @@
 | **Concepts** | Constraint satisfaction, set intersection, feature engineering, data cleaning, letter-frequency heuristics |
 | **Stack** | pandas, NumPy, Matplotlib |
 | **Code** | [`Wordle_Solver_v0.py`](Wordle_Solver_v0.py), plus three curated word-list CSVs |
+| **Notebooks** | [`01_Word_Elimination_v3.ipynb`](01_Word_Elimination_v3.ipynb) (the solver's prototype) and [`wordle_engine.ipynb`](wordle_engine.ipynb) (a playable game that scores guesses) |
 | **Status** | v0, in active development |
 
 ---
@@ -60,6 +61,31 @@ Type each letter of your guess. Follow a letter with `!` if it came back green o
 |---|---|
 | ⬜⬜🟩🟩⬜ for **WEARY** | `wea!r!y` |
 | ⬜⬜⬜⬜🟨 for **LEARN** | `learn?` |
+
+## How it evolved: the notebooks
+
+The solver started as notebook experiments in Google Colab. Two of them are included here because they show the logic before it was packaged into a class.
+
+### [`01_Word_Elimination_v3.ipynb`](01_Word_Elimination_v3.ipynb): the prototype solver
+
+This is the filtering logic from `Wordle_Solver_v0.py`, written by hand before it became a class.
+- Each cell holds one game's constraints. You edit the `in_word` and `not_in_word` lists and the per-slot conditions (`df['3rd'] == 'a'` for a green, `~df['2nd'].isin(...)` for a yellow), then intersect the matching row indices.
+- There are four copies of the cell, named `top_left`, `top_right`, `bottom_left`, and `bottom_right`. They were used to play four puzzles at once, as in four-board Wordle variants.
+- The letter-frequency bar chart of the remaining candidates later became `remaining_letter_frequency()`.
+- The last cell is a first try at parsing the `!`/`?` input notation, which became `new_guess_results()`.
+- The comments record the limitation that drives the roadmap: storing whether a letter appears, rather than how many times, loses information about double letters.
+
+### [`wordle_engine.ipynb`](wordle_engine.ipynb): the game engine
+
+This notebook is the other side of the problem: a `Wordle` class that holds a secret word and scores guesses against it.
+- `getpass` hides the secret word as it's typed, so one person can set a puzzle for another.
+- `score_guess` handles repeated letters in two passes. It marks greens first and uses up those letters, then hands out yellows from what's left, left to right. A letter that appears more often in the guess than in the answer is gray for the extra copies.
+- The output is written in the solver's input notation: `sauce` against `butch` prints `sau?c!e`. The engine's output can be passed straight to the solver, which is the basis for the planned self-play mode.
+- The saved output shows one full game: `sauce`, `hunch`, `mulch`, and `dutch`, then solved with `butch`.
+
+I checked `score_guess` against an independent implementation of Wordle's coloring rules on 3,004 random guess/answer pairs from the NLTK list, plus the double-letter cases in the notebook (`vivid`/`vviiv`, `eerie`/`leaee`). Every result matched.
+
+> **Note:** both notebooks are saved as they were last run in Colab. In `01_Word_Elimination_v3.ipynb`, cells were edited and re-run out of order, so a few saved outputs (the letter-frequency chart and the side-by-side comparisons near the end) don't match the code above them.
 
 ## Results
 
