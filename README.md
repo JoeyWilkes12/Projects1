@@ -10,6 +10,8 @@ A monorepo of self-contained Python projects that implement core algorithms **fr
 
 Each project pairs a from-scratch implementation with validation: against a reference library (NetworkX, SciPy, SymPy, Autograd), against known analytical results, or with `pytest` test suites.
 
+**Every project folder has its own README** written for two audiences: reviewers assessing the engineering, and learners meeting the concept for the first time. Each one covers why the idea is interesting, where it's used in industry, a 60-second concept primer, what's implemented, results from actually running the code, and ideas for extending it.
+
 ---
 
 ## Contents
@@ -52,11 +54,15 @@ Each project pairs a from-scratch implementation with validation: against a refe
 
 ## Project details
 
+> Short summaries below. Follow each **Read more** link for the full write-up.
+
 ### Graphs & networks
 
 #### BFS — Breadth-First Search &nbsp;·&nbsp; [`BFS/breadth_first_search.py`](BFS/breadth_first_search.py)
 - Implements a `Graph` class backed by an adjacency dictionary, with node/edge insertion and removal, **breadth-first traversal**, and **shortest-path** search.
 - Applies the same ideas at scale with NetworkX in `MovieGraph`, a bipartite actor–movie graph built from IMDb data, to compute an actor's "Bacon number" (degrees of separation) and plot how far every actor in the network is from a chosen actor, along with the average.
+
+**[Read more →](BFS/README.md)**
 
 #### PageRank &nbsp;·&nbsp; [`PageRank/PageRank.py`](PageRank/PageRank.py)
 - A `DiGraph` class that removes sink nodes, normalizes the adjacency matrix, and computes PageRank **three ways**: a direct linear-system solve, the dominant eigenvector, and power iteration with a convergence tolerance.
@@ -65,10 +71,14 @@ Each project pairs a from-scratch implementation with validation: against a refe
   - **Sports:** NCAA teams, with each game result treated as a weighted edge.
   - **Film:** actors from the IMDb Top 250, via NetworkX.
 
+**[Read more →](PageRank/README.md)**
+
 #### Drazin — Drazin Inverse & Link Prediction &nbsp;·&nbsp; [`Drazin/Drazin_Inverse.py`](Drazin/Drazin_Inverse.py)
 - Computes the matrix **index** and **Drazin inverse** (a generalized pseudo-inverse) with a verification routine.
 - Uses the graph Laplacian to compute **effective resistance** between every pair of nodes. Lower resistance means a stronger implied connection.
 - `LinkPredictor` reads a social network from CSV and recommends the most likely new connection, either globally or for a given person. This is the same idea that drives "friend suggestion" features.
+
+**[Read more →](Drazin/README.md)**
 
 ### Data structures & search
 
@@ -76,10 +86,14 @@ Each project pairs a from-scratch implementation with validation: against a refe
 - From-scratch **singly linked list** (iterative and recursive search), **binary search tree** (insert, find, remove with all child cases), and **AVL tree** (all four rotation cases for self-balancing).
 - Benchmarks build and search times across the three structures on growing inputs and plots them on log scales, showing the gap between O(n) and O(log n) behavior in practice.
 
+**[Read more →](Binary_Trees/README.md)**
+
 #### KNN — k-d Trees & Nearest Neighbors &nbsp;·&nbsp; [`KNN/k_nearest_neighbor.py`](KNN/k_nearest_neighbor.py)
 - Exhaustive (brute-force) nearest-neighbor search as a baseline.
 - A custom **k-d tree** with insertion and a pruned recursive nearest-neighbor query.
 - A `KNeighborsClassifier` (`fit`/`predict`, majority vote over `scipy.spatial.KDTree` neighbors) evaluated on a subset of the **MNIST** handwritten-digit dataset, with classification accuracy reported.
+
+**[Read more →](KNN/README.md)**
 
 ### Numerical analysis
 
@@ -90,11 +104,15 @@ Each project pairs a from-scratch implementation with validation: against a refe
 - Compares least squares solved with the **normal equations** against the **QR decomposition** to show why the QR approach is preferred.
 - Shows how an analytically correct formula can still be numerically unstable, with errors plotted on a log scale.
 
+**[Read more →](Conditional_Stability/README.md)**
+
 #### Differentiation &nbsp;·&nbsp; [`Differentiation/differentiation.py`](Differentiation/differentiation.py)
 - First- and second-order forward/backward and second- and fourth-order **centered difference quotients**, with log-log error analysis against step size *h*.
 - A finite-difference **Jacobian** and **Chebyshev polynomial** derivatives via Autograd.
 - **Applied problem:** estimates the speed of an aircraft tracked by two radar stations, given only their angle readings.
 - **Benchmark:** compares symbolic (SymPy), numerical (difference quotients), and automatic (Autograd) differentiation on computation time against accuracy.
+
+**[Read more →](Differentiation/README.md)**
 
 #### Newtons_method &nbsp;·&nbsp; [`Newtons_method/newtons_method.py`](Newtons_method/newtons_method.py)
 - A general Newton's method for scalar and vector-valued functions, with convergence reporting and a backtracking parameter α.
@@ -102,10 +120,14 @@ Each project pairs a from-scratch implementation with validation: against a refe
 - Searches for the step size α that converges in the fewest iterations.
 - Plots **basins of attraction** in the complex plane (Newton fractals).
 
+**[Read more →](Newtons_method/README.md)**
+
 #### Monte_Carlo — Monte Carlo Integration &nbsp;·&nbsp; [`Monte_Carlo/monte_carlo_integration`](Monte_Carlo/monte_carlo_integration)
 - Estimates the volume of the unit ball in *n* dimensions by random sampling.
 - 1-D and general *n*-D Monte Carlo integration over box domains.
 - Checks a 4-D Gaussian integral against SciPy's multivariate-normal CDF and confirms the expected **O(1/√N)** error convergence on a log-log plot.
+
+**[Read more →](Monte_Carlo/README.md)**
 
 ### Probability & machine learning
 
@@ -115,11 +137,15 @@ Each project pairs a from-scratch implementation with validation: against a refe
 - `SentenceGenerator` builds a word-to-word transition matrix from a text corpus and "babbles" new sentences.
 - Covered by a `pytest` suite: [`test_markov.py`](Markov_Chains/test_markov.py).
 
+**[Read more →](Markov_Chains/README.md)**
+
 ### Software engineering
 
 #### Unit_testing &nbsp;·&nbsp; [`Unit_testing/`](Unit_testing/)
 - [`specs.py`](Unit_testing/specs.py) contains utility functions, a `Fraction` class with arithmetic and comparison operators, and a counter for valid sets in the card game **SET**, including input validation.
 - [`test-specs.py`](Unit_testing/test-specs.py) is a `pytest` suite that uses fixtures, exception assertions, and edge cases chosen to expose bugs, such as smallest prime factors of perfect squares and leap-year month lengths.
+
+**[Read more →](Unit_testing/README.md)**
 
 ### Applied project: Wordle solver
 
@@ -130,7 +156,7 @@ Each project pairs a from-scratch implementation with validation: against a refe
 
   | Dataset | Words |
   |---|---|
-  | NLTK words corpus (5-letter subset) | 8,496 |
+  | NLTK words corpus (5-letter subset) | 8,497 |
   | Community 5-letter word list | 3,624 |
   | Joined NLTK + community list | 9,795 |
 
@@ -146,6 +172,8 @@ ws.new_guess_results("wea!r!y")      # 'a' and 'r' are green
 ws.new_guess_results("apa!r!t")      # narrows the candidates further
 ws.new_guess_results("s!h!a!r!d!")   # solved: "shard"
 ```
+
+**[Read more →](Wordle/README.md)**
 
 ---
 
@@ -214,6 +242,6 @@ Projects1/
 ## Notes & known limitations
 
 - **External datasets are not included.** Several applied functions expect data files in the working directory that aren't in this repository: `movie_data.txt`, `web_stanford.txt`, `top250movies.txt`, `social_network.csv`, `mnist_subset.npz`, `plane.npy`, `stability_data.npy`, `english.txt`, and text corpora for the Markov generator. The core algorithms and the test suites run without them.
-- **NumPy compatibility.** Parts of the code predate current NumPy releases. They use the removed aliases `np.float` and `np.int` (`KNN`, `Monte_Carlo`), `threshold=np.nan` (`PageRank`), and a float sample count in `linspace` (`Differentiation`). Use an older NumPy (< 1.24), or swap in `float`, `int`, `sys.maxsize`, and `int(1e3)`, to run those sections on a current install.
+- **NumPy compatibility.** Parts of the code predate current NumPy releases. They use the removed aliases `np.float` and `np.int` (`KNN`, `Monte_Carlo`), `threshold=np.nan` (`PageRank`), and a float sample count in `linspace` (`Differentiation`). Use an older NumPy (< 1.24), or swap in `float`, `int`, `sys.maxsize`, and `int(1e3)`, to run those sections on a current install. A few calls are also affected by newer SciPy and Matplotlib releases (`stats.mode` indexing in `KNN`, `stats.mvn.mvnun` in `Monte_Carlo`, `basex=` in `Binary_Trees`). Each project's README lists the specifics.
 - `Monte_Carlo/monte_carlo_integration` is a Python script without a `.py` extension. Run it with `python monte_carlo_integration`.
 - The Wordle solver is a **v0**. Planned work includes contradiction checking for mistyped feedback, an automated self-play mode, and tracking how many times each letter appears.
