@@ -72,7 +72,6 @@ python -i binary_trees.py
 ### Requirements and data
 - `BST.draw()` needs Graphviz and `pygraphviz`.
 - The benchmark `prob4()` reads `english.txt`, a word list that isn't included in the repository.
-- `prob4()` passes `basex`/`basey` to Matplotlib's `loglog`; Matplotlib 3.5 and later expect `base=`.
 
 ## Skills demonstrated
 

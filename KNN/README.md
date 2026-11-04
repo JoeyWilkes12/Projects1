@@ -67,8 +67,7 @@ python -i k_nearest_neighbor.py
 >>> tree.query(z), exhaustive_search(X, z)   # should match
 ```
 
-- **Data:** `prob6` needs `mnist_subset.npz` (with keys `X_train`, `y_train`, `X_test`, `y_test`). It isn't included in the repository.
-- **Compatibility:** `prob6` uses `np.float` (removed in NumPy 1.24). `KNeighborsClassifier.predict` indexes `stats.mode(...)[0][0]`, which fails on SciPy 1.11 and later, where `mode` returns a scalar. Use `float` and `stats.mode(...)[0]` on current versions.
+`prob6` needs `mnist_subset.npz` (with keys `X_train`, `y_train`, `X_test`, `y_test`). It isn't included in the repository.
 
 ## Skills demonstrated
 

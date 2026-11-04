@@ -71,8 +71,6 @@ python -i monte_carlo_integration
 >>> prob4()                      # convergence plot
 ```
 
-`prob4` uses `np.int`, which was removed in NumPy 1.24; replace it with `int` on current versions. It also calls `scipy.stats.mvn.mvnun`, which recent SciPy releases no longer provide; `scipy.stats.multivariate_normal.cdf` is the modern replacement.
-
 ## Skills demonstrated
 
 - Vectorized NumPy: sampling, broadcasting, and norms over arrays of millions of points.
